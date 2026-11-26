@@ -3,95 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Student Services - MRU</title>
+<title>Exam Eligibility Checker</title>
 <style>
-:root{--main:#0b3d91;--accent:#f57c00;--bg:#f0f4fa}
-*{box-sizing:border-box}
-body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:#222}
-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;background:var(--main);color:#fff;padding:12px 25px}
-header nav a{color:#fff;text-decoration:none;margin-left:18px;transition:color .3s}
-header nav a:hover{color:var(--accent)}
-.hero{text-align:center;padding:70px 20px;color:#fff;background:linear-gradient(135deg,#0b3d91,#1976d2);animation:fade 1.2s ease}
-.hero h1{font-size:2.4rem;margin:0 0 10px}
-.hero a{display:inline-block;margin-top:15px;padding:12px 28px;background:var(--accent);color:#fff;border-radius:30px;text-decoration:none;transition:transform .3s}
-.hero a:hover{transform:scale(1.08)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px;max-width:1100px;margin:40px auto;padding:0 20px}
-.card{background:#fff;padding:25px;border-radius:12px;text-align:center;border:1px solid #dde;box-shadow:0 2px 6px rgba(0,0,0,.08);transition:transform .3s,box-shadow .3s}
-.card:hover{transform:translateY(-8px);box-shadow:0 10px 20px rgba(0,0,0,.18)}
-.card .icon{font-size:42px}
-.card h3{color:var(--main);margin:10px 0}
-.card a{color:var(--accent);font-weight:bold;text-decoration:none}
-footer{background:#082a66;color:#fff;text-align:center;padding:18px;margin-top:30px}
-@keyframes fade{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:none}}
-@media(max-width:600px){
-header{flex-direction:column}
-header nav a{margin:6px 8px;display:inline-block}
-.hero h1{font-size:1.7rem}
-}
+body{font-family:Arial,sans-serif;max-width:900px;margin:20px auto;padding:0 15px;background:#f4f6f9}
+h2{color:#0b3d91}
+.box{background:#fff;padding:15px;border-radius:8px;margin-bottom:15px}
+input,select{padding:8px;margin:4px 6px 4px 0}
+button{padding:9px 16px;border:0;border-radius:4px;color:#fff;background:#0b3d91;cursor:pointer}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{border:1px solid #ccc;padding:8px;text-align:center}
+th{background:#0b3d91;color:#fff}
+.ok{background:#c8e6c9}
+.cond{background:#ffe0b2}
+.no{background:#ffcdd2}
+#err{color:red}
 </style>
 </head>
 <body>
-<header>
-<h2>MRU Student Services</h2>
-<nav>
-<a href="#">Home</a>
-<a href="#services">Services</a>
-<a href="#">Contact</a>
-</nav>
-</header>
+<h2>Attendance / Exam Eligibility Checker</h2>
 
-<section class="hero">
-<h1>Everything a Student Needs, in One Place</h1>
-<p>Quick access to library, transport, hostel, placements and examinations.</p>
-<a href="#services">Explore Services</a>
-</section>
+<div class="box">
+<input id="name" placeholder="Student name">
+<input id="roll" placeholder="Roll number">
+<input id="att" type="number" placeholder="Attendance %">
+<input id="marks" type="number" placeholder="Internal marks %">
 
-<section class="grid" id="services">
-<div class="card">
-<div class="icon">📚</div>
-<h3>Library</h3>
-<p>Catalogue, e-books and timings.</p>
-<a href="#">Open</a>
+<select id="exam">
+<option>Minor-1</option>
+<option>Minor-2</option>
+<option>Endterm</option>
+</select>
+
+<button onclick="addStudent()">Add Student</button>
+<button onclick="showResults()">Check Eligibility</button>
+<p id="err"></p>
 </div>
 
-<div class="card">
-<div class="icon">🚌</div>
-<h3>Transport</h3>
-<p>Bus routes and schedules.</p>
-<a href="#">Open</a>
-</div>
+<div id="summary"></div>
 
-<div class="card">
-<div class="icon">🏠</div>
-<h3>Hostel</h3>
-<p>Rules, allotment and mess menu.</p>
-<a href="#">Open</a>
-</div>
+<table id="tbl">
+<thead>
+<tr>
+<th>Roll No</th><th>Name</th><th>Exam</th>
+<th>Attendance</th><th>Marks</th><th>Status</th><th>Reason</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
 
-<div class="card">
-<div class="icon">💼</div>
-<h3>Placements</h3>
-<p>Drives, training and results.</p>
-<a href="#">Open</a>
-</div>
+<script>
+const students = [];
+const ELIGIBLE = 75, CONDONATION = 65, MIN_MARKS = 40;
 
-<div class="card">
-<div class="icon">📝</div>
-<h3>Examinations</h3>
-<p>Timetables, hall tickets, results.</p>
-<a href="#">Open</a>
-</div>
+function addStudent() {
+  const name = document.getElementById("name").value.trim();
+  const roll = document.getElementById("roll").value.trim();
+  const att = parseFloat(document.getElementById("att").value);
+  const marks = parseFloat(document.getElementById("marks").value);
+  const exam = document.getElementById("exam").value;
+  const err = document.getElementById("err");
 
-<div class="card">
-<div class="icon">❓</div>
-<h3>Helpdesk</h3>
-<p>Raise queries and get support.</p>
-<a href="#">Open</a>
-</div>
-</section>
+  if (!name || !roll || isNaN(att) || isNaN(marks)) {
+    err.innerText = "Fill in all fields.";
+    return;
+  }
+  if (att < 0 || att > 100 || marks < 0 || marks > 100) {
+    err.innerText = "Values must be between 0 and 100.";
+    return;
+  }
+  if (students.some(s => s.roll === roll && s.exam === exam)) {
+    err.innerText = "Record already exists for this roll number and exam.";
+    return;
+  }
 
-<footer>
-&copy; 2026 Malla Reddy University | studentservices@mru.edu.in
-</footer>
+  err.innerText = "";
+  students.push({name, roll, att, marks, exam});
+  showResults();
+}
+
+function checkEligibility(s) {
+  let needMarks;
+
+  switch (s.exam) {
+    case "Minor-1": needMarks = 0; break;
+    case "Minor-2": needMarks = 0; break;
+    case "Endterm": needMarks = MIN_MARKS; break;
+  }
+
+  if (s.att >= ELIGIBLE && s.marks >= needMarks)
+    return ["Eligible","ok","Meets attendance" +
+    (needMarks ? " and marks" : "") + " criteria"];
+
+  if (s.att >= ELIGIBLE)
+    return ["Not Eligible","no","Internal marks below " + MIN_MARKS + "%"];
+
+  if (s.att >= CONDONATION && s.marks >= needMarks)
+    return ["Condonation","cond","Attendance between " +
+    CONDONATION + "% and " + ELIGIBLE + "%"];
+
+  return ["Not Eligible","no","Attendance below " + CONDONATION + "%"];
+}
+
+function showResults() {
+  const body = document.querySelector("#tbl tbody");
+  body.innerHTML = "";
+
+  let e = 0, c = 0, n = 0;
+
+  for (let i = 0; i < students.length; i++) {
+    const s = students[i];
+    const [status, cls, reason] = checkEligibility(s);
+
+    if (status === "Eligible") e++;
+    else if (status === "Condonation") c++;
+    else n++;
+
+    body.innerHTML += `<tr class="${cls}">
+    <td>${s.roll}</td>
+    <td>${s.name}</td>
+    <td>${s.exam}</td>
+    <td>${s.att}%</td>
+    <td>${s.marks}%</td>
+    <td><b>${status}</b></td>
+    <td>${reason}</td>
+    </tr>`;
+  }
+
+  document.getElementById("summary").innerHTML =
+  `<div class="box"><b>Total:</b> ${students.length} |
+  <b>Eligible:</b> ${e} |
+  <b>Condonation:</b> ${c} |
+  <b>Not Eligible:</b> ${n}</div>`;
+}
+</script>
 </body>
 </html>
